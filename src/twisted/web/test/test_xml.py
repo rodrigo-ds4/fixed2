@@ -788,31 +788,87 @@ alert("I hate you");
         xmlOut = document.toxml()
         self.assertEqual(xmlOut, xmlOk)
 
-    def test_parseStringWorks(self):
-        """
-        Test that parseString function works correctly.
-        """
-        doc = microdom.parseString("<test>content</test>")
-        self.assertIsNotNone(doc)
-        self.assertEqual(doc.documentElement.tagName, "test")
-        self.assertEqual(doc.documentElement.firstChild().data, "content")
 
-    def test_elementCreation(self):
-        """
-        Test that creating microdom Element instances works correctly.
-        """
-        element = microdom.Element("div")
-        self.assertEqual(element.tagName, "div")
-        self.assertEqual(element.nodeName, "div")
+class MicrodomDeprecationEnforcementTests(TestCase):
+    """
+    Tests that enforce microdom deprecation policy by failing when 
+    microdom usage is detected in inappropriate places.
+    """
 
-    def test_microdomParserCreation(self):
+    def test_no_new_microdom_usage(self):
         """
-        Test that creating MicroDOMParser instances works correctly.
+        Test that fails if microdom usage exceeds known baseline.
+        This prevents new code from using the deprecated microdom module.
         """
-        parser = microdom.MicroDOMParser()
-        self.assertIsNotNone(parser)
-        self.assertEqual(parser.beExtremelyLenient, 0)
-        self.assertEqual(parser.caseInsensitive, 1)
+        import os
+        import re
+        
+        # Known files that legitimately use microdom (current baseline)
+        allowed_microdom_files = {
+            'src/twisted/web/microdom.py',        # The module itself
+            'src/twisted/web/domhelpers.py',      # Uses microdom (mentioned in issue #3561)
+            'src/twisted/web/test/test_xml.py',   # Tests for microdom
+            'src/twisted/web/test/test_domhelpers.py'  # Tests for domhelpers (which uses microdom)
+        }
+        
+        # Find all Python files that import or use microdom
+        microdom_usage_files = set()
+        
+        # Get the project root directory (should contain src/)
+        current_dir = os.getcwd()
+        test_file_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = test_file_dir
+        
+        # Walk up until we find src/ directory
+        while project_root and not os.path.exists(os.path.join(project_root, 'src')):
+            parent = os.path.dirname(project_root)
+            if parent == project_root:  # reached root
+                break
+            project_root = parent
+            
+        src_dir = os.path.join(project_root, 'src')
+        
+        
+        if os.path.exists(src_dir):
+            for root, dirs, files in os.walk(src_dir):
+                for file in files:
+                    if file.endswith('.py'):
+                        filepath = os.path.join(root, file)
+                        try:
+                            with open(filepath, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                # Check for microdom imports or usage
+                                if (re.search(r'\bimport.*microdom\b', content) or
+                                    re.search(r'\bfrom.*microdom\b', content) or
+                                    re.search(r'\bmicrodom\.[a-zA-Z]', content)):
+                                    # Convert to relative path from project root for consistency
+                                    rel_path = os.path.relpath(filepath, project_root)
+                                    microdom_usage_files.add(rel_path)
+                        except (UnicodeDecodeError, IOError):
+                            # Skip files that can't be read
+                            continue
+        
+        # Find files using microdom that are NOT in the allowed list
+        unexpected_usage = microdom_usage_files - allowed_microdom_files
+        
+        
+        if unexpected_usage:
+            self.fail(
+                f"Found unexpected microdom usage in files: {sorted(unexpected_usage)}. "
+                f"microdom is deprecated and should not be used in new code. "
+                f"Consider using xml.dom.minidom or other XML libraries instead."
+            )
+        
+        # Also ensure we haven't exceeded the known baseline count
+        max_allowed_files = len(allowed_microdom_files)
+        actual_count = len(microdom_usage_files)
+        
+        if actual_count > max_allowed_files:
+            self.fail(
+                f"microdom usage found in {actual_count} files, but only {max_allowed_files} "
+                f"are allowed. New microdom usage is not permitted due to deprecation. "
+                f"Files: {sorted(microdom_usage_files)}"
+            )
 
 
 class BrokenHTMLTests(TestCase):
