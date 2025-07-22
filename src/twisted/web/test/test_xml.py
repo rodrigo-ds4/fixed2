@@ -788,6 +788,32 @@ alert("I hate you");
         xmlOut = document.toxml()
         self.assertEqual(xmlOut, xmlOk)
 
+    def test_parseStringWorks(self):
+        """
+        Test that parseString function works correctly.
+        """
+        doc = microdom.parseString("<test>content</test>")
+        self.assertIsNotNone(doc)
+        self.assertEqual(doc.documentElement.tagName, "test")
+        self.assertEqual(doc.documentElement.firstChild().data, "content")
+
+    def test_elementCreation(self):
+        """
+        Test that creating microdom Element instances works correctly.
+        """
+        element = microdom.Element("div")
+        self.assertEqual(element.tagName, "div")
+        self.assertEqual(element.nodeName, "div")
+
+    def test_microdomParserCreation(self):
+        """
+        Test that creating MicroDOMParser instances works correctly.
+        """
+        parser = microdom.MicroDOMParser()
+        self.assertIsNotNone(parser)
+        self.assertEqual(parser.beExtremelyLenient, 0)
+        self.assertEqual(parser.caseInsensitive, 1)
+
 
 class BrokenHTMLTests(TestCase):
     """
@@ -1109,33 +1135,4 @@ class ElementTests(TestCase):
         )
 
 
-class MicroDOMFunctionalityTests(TestCase):
-    """
-    Tests for basic microdom functionality.
-    """
 
-    def test_parseStringWorks(self):
-        """
-        Test that parseString function works correctly.
-        """
-        doc = microdom.parseString("<test>content</test>")
-        self.assertIsNotNone(doc)
-        self.assertEqual(doc.documentElement.tagName, "test")
-        self.assertEqual(doc.documentElement.firstChild().data, "content")
-
-    def test_elementCreation(self):
-        """
-        Test that creating microdom Element instances works correctly.
-        """
-        element = microdom.Element("div")
-        self.assertEqual(element.tagName, "div")
-        self.assertEqual(element.nodeName, "div")
-
-    def test_microdomParserCreation(self):
-        """
-        Test that creating MicroDOMParser instances works correctly.
-        """
-        parser = microdom.MicroDOMParser()
-        self.assertIsNotNone(parser)
-        self.assertEqual(parser.beExtremelyLenient, 0)
-        self.assertEqual(parser.caseInsensitive, 1)
