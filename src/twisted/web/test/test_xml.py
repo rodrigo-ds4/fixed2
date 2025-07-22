@@ -804,8 +804,8 @@ class MicrodomDeprecationEnforcementTests(TestCase):
         import re
         
         # Known files that legitimately use microdom (current baseline)
+        # Note: microdom.py itself doesn't import microdom, it IS microdom
         allowed_microdom_files = {
-            'src/twisted/web/microdom.py',        # The module itself
             'src/twisted/web/domhelpers.py',      # Uses microdom (mentioned in issue #3561)
             'src/twisted/web/test/test_xml.py',   # Tests for microdom
             'src/twisted/web/test/test_domhelpers.py'  # Tests for domhelpers (which uses microdom)
